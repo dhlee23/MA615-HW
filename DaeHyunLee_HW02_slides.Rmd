@@ -5,6 +5,7 @@ date: "9/20/2019"
 output: ioslides_presentation
 ---
 
+
 ```{r setup, include=FALSE}
 library(knitr)                ## loading the entire knitr package
 library(ggplot2)              ## the only tidyverse library you need is ggplot2
@@ -14,7 +15,7 @@ library(kableExtra)
 library(magrittr)
 opts_chunk$set(echo = TRUE)
 ```
-
+sfesgx
 
 ## Tables:
 
