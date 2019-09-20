@@ -15,7 +15,6 @@ library(kableExtra)
 library(magrittr)
 opts_chunk$set(echo = TRUE)
 ```
-sfesgx
 
 ## Tables:
 
