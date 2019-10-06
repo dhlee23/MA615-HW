@@ -2,7 +2,10 @@
 title: "Tidyverse Problem Set"
 author: "Dae Hyun Lee"
 date: "October 4, 2019"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 urlcolor: blue
 ---
 
@@ -10,60 +13,87 @@ urlcolor: blue
 library(knitr)
   options(tinytex.verbose = TRUE)
   opts_chunk$set(echo = TRUE)
-library(tidyverse)  
-  
+library(tidyverse)
+library(tidyr)
+library(ggplot2)
+library(kableExtra)
+library(magrittr)
+library(esquisse)
+library(gridExtra)
+library(shiny)
+library(dplyr)
+library(AER)
 ```
-
-The purpose of this problem set is to provide data contexts in which to exercise the capabilitiues of the tidyverse. While some questons require specific answers, other parts of the problems have been written to be purposely ambiguous, requiring you to think through the presentation details of your answer. 
-
-
-
-
-HOLD THE PRESSES!  
-As I was preparing to post these problems yesterday, I noticed that tidyr had been updata in the last few weeks. I was looking for more exercises on gather() and spread() -- which are always difficult to master.  And I found that they have been superceded!!  Why do I love working with R as the tidyversie is on a path of continuous improvement? Because the improvements come from developers who write things like this:
-
-
-_For some time, it’s been obvious that there is something fundamentally wrong with the design of spread() and gather(). Many people don’t find the names intuitive and find it hard to remember which direction corresponds to spreading and which to gathering. It also seems surprisingly hard to remember the arguments to these functions, meaning that many people (including me!) have to consult the documentation every time._  [Hadley Wickham, Pivot Vingette](https://cran.r-project.org/web/packages/tidyr/vignettes/pivot.html)
-
-
-So... before you do anymore tidyverse exercises,
-Read this [tidyr 1.0.0](https://www.tidyverse.org/articles/2019/09/tidyr-1-0-0/).
-
-Then go to the [tidyr cran page](https://cran.r-project.org/web/packages/tidyr/index.html) 
-and to the examples and exercies in the new vignettes.
-
-In your solutions to the problems below, if you need to use table reshaping functions from TidyR, be sure that you use pivot_longer(), and pivot_wider().
-
-
 
 ### Problem 1
 
 Load the gapminder data from the gapminder package.
-```{r load gapminder}
+```{r echo=FALSE}
 library(gapminder)
 data(gapminder)
 ```
+
 How many continents are included in the data set?
-```{r}
+```{r echo=FALSE}
 levels(gapminder$continent)
 ```
 _There are total 5 continents in the data set._
 
 How many countrys are included?  How many countries per continent?
-```{r}
+```{r echo=FALSE}
 head(fct_unique(gapminder$country))
 ```
 _There are total 142 courtrys are included in the data set._
 
 Using the gapminder data, produce a report showing the continents in the dataset, total population per continent, and GDP per capita.  Be sure that the table is properly labeled and suitable for inclusion in a printed report.
-```{r}
-levels(gapminder$continent)
+```{r echo=FALSE}
+#year <- gapminder$year
+#unique(year) ## check what years are in the data, and decide to narrow the report to 1992.
+gapminder1992 <- filter(gapminder, year == 1992)  ##filter data to year in 1992
+gap1992 <- mutate(gapminder1992, gdp = pop * gdpPercap)       ##create a variable containing GDP
+totalp <- aggregate(gap1992[c("pop")], list(Continent=gap1992$continent), sum)   ##population by continents in 1992
+totalg <- aggregate(gap1992[c("gdp")], list(gap1992$continent), sum)          ##overall GDP by continents in 1992
+gpercapita <- totalg$gdp / totalp$pop                        ##overall GDP / overall population by continents
+totalGP <- mutate(totalp, fixedgdpPercap = gpercapita)     ##Combine two variables together in data
+d1 <- as_tibble(totalGP)
+kable(d1, digits = 2, align = 'c',
+      col.names = c("Continent", "Total Population", "GDP per Capita"), caption = "Total population and per capita GDP of each continent in 2002") %>% 
+  kable_styling()
+
+## Why does this table keep appears to show in the next page in such abnormal format
 ```
 
-_saf_
-
 Produce a well-labeled table that summarizes GDP per capita for the countries in each continent,  contrasting the years 1952 and 2007.
-_wdw_
+```{r echo=FALSE}
+## unique(gapminder$continent)
+gapminder1 <- mutate(gapminder, gdp = gapminder$gdpPercap * gapminder$pop)
+gap1952 <- filter(gapminder1, year == 1952)
+gap2007 <- filter(gapminder1, year == 2007)
+get1 <- function(data1){
+  get.gdp <- function(data0){
+    sum(data0$gdp)/sum(data0$pop)
+  }
+  x1 <- filter(data1, continent == "Africa")
+  x2 <- filter(data1, continent == "Europe")
+  x3 <- filter(data1, continent == "Asia")
+  x4 <- filter(data1, continent == "Americas")
+  x5 <- filter(data1, continent == "Oceania")
+  return(c(get.gdp(x1), get.gdp(x2), get.gdp(x3), get.gdp(x4), get.gdp(x5)))
+}
+tb.gdp2007 <- get1(gap2007)
+tb.gdp1952 <- get1(gap1952)
+cont <- c("Africa", "Europe", "Asia", "Americas", "Oceania")
+ex1.table2 <- tibble(
+  `continent` = cont,
+  `gdp1952` = tb.gdp1952,
+  `gdp2007` = tb.gdp2007
+)
+kable(ex1.table2, digits = 2,
+      col.names = c("Continent", "GDP per capita in 1952", "GDP per capita in 2007"), 
+      caption = "GDP per capita by continents in 1952 and in 2007", align = 'c') %>%
+  kable_styling(latex_options = 'hold_position',font_size = 12,full_width = F,position = "center") %>%
+  column_spec(1,bold = T)
+```
 
 Product a plot that summarizes the same data as the table. There should be two plots per continent.
 _wdwd_
@@ -86,25 +116,58 @@ _j_
 ### Problem 2
 
 The data for Problem 2 is the Fertility data in the AER package.  This data is from the 1980 US Census and is comprised of date on married women aged 21-35 with two or more children.  The data report the gender of each woman's first and second child, the woman's race, age, number of weeks worked in 1979, and whether the woman had more than two children.
-```{r}
-library(AER)
+
+```{r echo=FALSE}
 data("Fertility")
-data(Fertility)
-##glimpse(Fertility)
-##Fertility %>% slice(30:40)
 Fertility <- as_tibble(Fertility)
-##Fertility
 ```
 
 There are four possible gender combinations for the first two Children.  Product a plot the contracts the frequency of these four combinations. Are the frequencies different for women in their 20s and wemen who are older than 29?
+```{r echo=FALSE}
+freq <- Fertility %>% unite("combined", gender1, gender2, sep="&")
+freq %<>% mutate(age.2030=ifelse(age>29, "age_30s", "age_20s"))
+ggplot(freq) +
+  aes(x=combined, fill=age.2030) +
+  geom_bar(position=position_dodge(width=1)) +
+  labs(x="Gender of children", y="Frequency", title="Frequency of combinations", fill="Mom's age") +
+  theme_classic()
+```
 
-Produce a plot that contrasts the frequency of having more than two children by race and ethnicity.  
+_It is clear that there are differences in frequency between two age groups._
 
+Produce a plot that contrasts the frequency of having more than two children by race and ethnicity. 
+```{r echo=FALSE}
+## Filter women with more than two children
+fert1 <- filter(Fertility, morekids=="yes")
+## Filter women by race
+race.af <- filter(fert1, afam=="yes")
+race.af$race <- "Afam"
+race.his <- filter(fert1, afam=="no" & hispanic=="yes")
+race.his$race <- "Hisp"
+race.non <- filter(fert1, afam=="no" & hispanic=="no" & other=="yes")
+race.non$race <- "Other"
+race.cau <- filter(fert1, afam=="no" & hispanic=="no" & other=="no")
+race.cau$race <- "Cauc"
+## Combine data together
+fert2 <- bind_rows(race.af, race.his, race.non, race.cau)
+## Add column whose age is whether above 29 or below 30.
+fert2 %<>% mutate(age.2030=ifelse(age>29, "age_30s", "age_20s"))
+## Plot
+ggplot(fert2) +
+  aes(x=race, fill=age.2030) +
+  geom_bar() +
+  labs(x="Race", y="Frequency", title="Frequency of having more than two children by race", fill="Mom's age") +
+  theme_classic()
+```
 
 ### Problem 3
 
-Use the mtcars and mpg datasets.  
+Use the mtcars and mpg datasets.~~
 How many times does the letter "e" occur in mtcars rownames?
+```{r}
+data(mtcars)
+data(mpg)
+```
 
 How many cars in mtcars have the brand Merc?
 
