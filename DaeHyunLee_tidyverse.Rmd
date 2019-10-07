@@ -162,36 +162,69 @@ ggplot(fert2) +
 
 ### Problem 3
 
-Use the mtcars and mpg datasets.~~
-How many times does the letter "e" occur in mtcars rownames?
-```{r}
+Use the mtcars and mpg datasets.
+```{r echo=FALSE}
 data(mtcars)
 data(mpg)
 ```
 
+How many times does the letter "e" occur in mtcars rownames?
+```{r echo=FALSE}
+mtcars.1 <- as_tibble(rownames_to_column(mtcars, var="model"))
+sum(str_count(mtcars.1$model, "e"))
+```
+_The letter "e" occurs 25 times in mtcars rownames_
+
 How many cars in mtcars have the brand Merc?
+```{r echo=FALSE}
+sum(str_count(mtcars.1$model, "Merc"))
+```
+_7 cars in mtcars have the brand Merc_
 
 How many cars in mpg have the brand("manufacturer" in mpg) Merc?
+```{r echo=FALSE}
+sum(str_count(mpg$manufacturer, "merc"))
+```
+_There are no such cars that uses the brand Merc in mpg. Instead, there are 4 cars that have brand name mercury_
 
-Contrast the mileage data for Merc cars as reported in mtcars and mpg.  Use tables, plots, and a short explaination.
+Contrast the mileage data for Merc cars as reported in mtcars and mpg.  Use tables, plots, and a short explanation.
+```{r echo=FALSE}
+library(stringr)
+mpg.merc <- filter(mpg, manufacturer=="mercury")
+kable(cbind(mpg.merc$manufacturer, mpg.merc$model, mpg.merc$cty, mpg.merc$hwy), booktabs=T,
+      caption = "Mileage data for Merc in mpg",
+      col.names=c("Manufacturer", "Model","City miles per gallown",
+                  "Highways miles per gallon"),align = "c") %>% 
+  kable_styling(latex_options = "hold_position")
+```
 
+```{r echo=FALSE}
+mtcars.2 <- mtcars.1[8:14,]
+kable(cbind(mtcars.2$model, mtcars.2$mpg) , booktabs=T,
+      caption = "Mileage data for Merc in mtcars",
+      col.names=c("Model","Miles/(US)gallon"), align="c") %>%
+  kable_styling(latex_options = "hold_position")
+```
 
 ### Problem 4
 
 Install the babynames package.
+
 ```{r}
 library(babynames)
-data(babynames)
+data("babynames")
 babyn <- as_tibble(babynames)
-babyn
 ```
+
 Draw a sample of 500,000 rows from the babynames data
+
 ```{r}
 ##hist(babyn$year)
 s <- sample(x = 1:1924665, size = 500000, replace = FALSE)
 babyn_500000 <- babyn %>% slice(s)
 babyn_500000
 ```
+
 Produce a tabble that displays the five most popular boy names and girl names
 in the years 1880,1920, 1960, 2000.
 
