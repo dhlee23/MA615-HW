@@ -191,18 +191,22 @@ Contrast the mileage data for Merc cars as reported in mtcars and mpg.  Use tabl
 ```{r echo=FALSE}
 library(stringr)
 mpg.merc <- filter(mpg, manufacturer=="mercury")
-kable(cbind(mpg.merc$manufacturer, mpg.merc$model, mpg.merc$cty, mpg.merc$hwy), booktabs=T,
-      caption = "Mileage data for Merc in mpg",
+mpgT <- cbind(mpg.merc$manufacturer, mpg.merc$model, mpg.merc$cty, mpg.merc$hwy)
+kable(mpgT, booktabs=T,
       col.names=c("Manufacturer", "Model","City miles per gallown",
-                  "Highways miles per gallon"),align = "c") %>% 
+                  "Highways miles per gallon"),
+      caption = "Mileage data for Merc in mpg",
+      align = "c") %>% 
   kable_styling(latex_options = "hold_position")
 ```
 
 ```{r echo=FALSE}
 mtcars.2 <- mtcars.1[8:14,]
-kable(cbind(mtcars.2$model, mtcars.2$mpg) , booktabs=T,
+mtT <- cbind(mtcars.2$model, mtcars.2$mpg)
+kable(mtT , booktabs=T,
+      col.names=c("Model","Miles/(US)gallon"),
       caption = "Mileage data for Merc in mtcars",
-      col.names=c("Model","Miles/(US)gallon"), align="c") %>%
+      align="c") %>%
   kable_styling(latex_options = "hold_position")
 ```
 
@@ -210,7 +214,7 @@ kable(cbind(mtcars.2$model, mtcars.2$mpg) , booktabs=T,
 
 Install the babynames package.
 
-```{r}
+```{r echo=FALSE}
 library(babynames)
 data("babynames")
 babyn <- as_tibble(babynames)
@@ -218,22 +222,66 @@ babyn <- as_tibble(babynames)
 
 Draw a sample of 500,000 rows from the babynames data
 
-```{r}
+```{r echo=FALSE}
 ##hist(babyn$year)
 s <- sample(x = 1:1924665, size = 500000, replace = FALSE)
 babyn_500000 <- babyn %>% slice(s)
 babyn_500000
 ```
 
-Produce a tabble that displays the five most popular boy names and girl names
+Produce a table that displays the five most popular boy names and girl names
 in the years 1880,1920, 1960, 2000.
+```{r echo=FALSE}
+babyn1880 <- babyn %>% filter(year==1880) %>% arrange(-n)
+babyn1920 <- babyn %>% filter(year==1920) %>% arrange(-n)
+babyn1960 <- babyn %>% filter(year==1960) %>% arrange(-n)
+babyn2000 <- babyn %>% filter(year==2000) %>% arrange(-n)
+babynT <- tibble(`rank`= c("#1","#2","#3","#4","#5") , 
+                 `1880`=babyn1880$name[1:5], `1920`=babyn1920$name[1:5],
+                 `1960`=babyn1960$name[1:5], `2000`=babyn2000$name[1:5])
+kable(babynT, booktabs=T,
+      col.names=c("Rank", "1880", "1920", "1960", "2000"),
+      caption = "The five most popular boy names and girl names") %>%
+  kable_styling(latex_options = "hold_position")
+```
 
 What names overlap boys and girls?
+```{r echo=FALSE}
+babynMale <- babyn %>% filter(sex=="M")
+babynFemale <- babyn %>% filter(sex=="F")
+length(intersect(babynMale$name, babynFemale$name))
+```
+_There are total 10663 overlapping names between boys and girls_
 
 What names were used in the 19th century but have not been used in the 21sth century?
+```{r echo=FALSE}
+name19 <- babyn %>% filter(year >= 1800 & year < 1900)
+name21 <- babyn %>% filter(year >= 2000)
+name19only <- name19
+name19only$only <- !(name19$name %in% name21$name)
+name19only <- filter(name19only, only == "TRUE")   ##name19only contains the names 
+head(name19only)                                    
+```
 
 Produce a chart that shows the relative frequency of the names "Donald", "Hilary", "Hillary", "Joe", "Barrack",  over the years 1880 through 2017.
+```{r echo=FALSE}
+nameTT <- babyn %>% select(year, sex, name, n) %>%
+  filter(name==c("Donald", "Hilary", "Hillary", "Joe", "Barrack")) %>%
+  arrange(name)
+nameT <- as_tibble(aggregate(nameTT$n, list(Name=nameTT$name),sum))
+nameT$prop <- nameT$x/sum(nameT$x)
+nameT$proportion <- nameT$prop * 100
+nameT
 
+pie <- ggplot(nameT) +
+  aes(x="", y=prop, fill=Name) +
+  geom_col() +
+  coord_polar("y", start=0) +
+  labs(x="", y="Relative Frequency", title="Percentage of the names Donald, Hilary, Hillary, Joe", fill="Names") 
+pie + scale_fill_brewer(palette="Dark2")
+
+
+```
 
 
 
