@@ -2,10 +2,12 @@
 title: "Tidyverse Problem Set"
 author: "Dae Hyun Lee"
 date: "October 4, 2019"
+header-includes:
+  - \usepackage{float}
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 urlcolor: blue
 ---
 
@@ -58,7 +60,7 @@ totalGP <- mutate(totalp, fixedgdpPercap = gpercapita)     ##Combine two variabl
 d1 <- as_tibble(totalGP)
 kable(d1, digits = 2, align = 'c',
       col.names = c("Continent", "Total Population", "GDP per Capita"), caption = "Total population and per capita GDP of each continent in 2002") %>% 
-  kable_styling()
+  kable_styling(latex_options = "hold_position")
 
 ## Can not figure out why does this table keep appears to show in the next page in such abnormal format
 ```
