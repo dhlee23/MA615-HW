@@ -3,9 +3,9 @@ title: "Tidyverse Problem Set"
 author: "Dae Hyun Lee"
 date: "October 4, 2019"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 urlcolor: blue
 ---
 
@@ -60,12 +60,11 @@ kable(d1, digits = 2, align = 'c',
       col.names = c("Continent", "Total Population", "GDP per Capita"), caption = "Total population and per capita GDP of each continent in 2002") %>% 
   kable_styling()
 
-## Why does this table keep appears to show in the next page in such abnormal format
+## Can not figure out why does this table keep appears to show in the next page in such abnormal format
 ```
 
 Produce a well-labeled table that summarizes GDP per capita for the countries in each continent,  contrasting the years 1952 and 2007.
 ```{r echo=FALSE}
-## unique(gapminder$continent)
 gapminder1 <- mutate(gapminder, gdp = gapminder$gdpPercap * gapminder$pop)
 gap1952 <- filter(gapminder1, year == 1952)
 gap2007 <- filter(gapminder1, year == 2007)
@@ -96,20 +95,36 @@ kable(ex1.table2, digits = 2,
 ```
 
 Product a plot that summarizes the same data as the table. There should be two plots per continent.
-_wdwd_
+```{r, echo=FALSE}
+gapminder %>% filter(year %in% c(1952, 2007)) %>%
+  ggplot() +
+  geom_bar(aes(x=as.factor(year), y=gdpPercap), stat="identity")+
+  facet_grid(~continent) +
+  labs(x="Continents in 1952 and 2007", y="GDP per capita", 
+       title="per capita GDP of each continents in year 1952 and 2007") +
+  theme_linedraw()
+```
 
 Which countries in the dataset have had periods of negative population growth?
-_oo_
-
 Illustrate your answer with a table or plot.
-_oo_
+```{r, echo=FALSE}
+neg <- gapminder %>% 
+  mutate(popChange=pop - lag(pop)) %>% 
+  filter(popChange < 0) %>% group_by(country)      ##countries with neg pop growth
+new_neg <- neg %>% distinct(country)   ## take out duplicates
+length(new_neg$country)                ## count how many countries had neg pop growth
+```
+_There are total 109 countries which have had periods of negative population growth._
 
 Which countries in the dataset have had the highest rate of growth in per capita GDP?
-_k_
-
 Illustrate your answer with a table or plot.
-_j_
-
+```{r, echo=FALSE}
+gdp_gro <- gapminder %>% group_by(country) %>% 
+  mutate(gdpChange=lag(gdpPercap, order_by = year)- gdpPercap)
+gdp_gro %<>% arrange(desc(gdpChange))
+head(gdp_gro, n=10)
+```
+_Kuwait have had the highest rate of growth in per capita GDP in 1977._ 
 
 \newpage
 
@@ -209,6 +224,8 @@ kable(mtT , booktabs=T,
       align="c") %>%
   kable_styling(latex_options = "hold_position")
 ```
+
+\newpage
 
 ### Problem 4
 
