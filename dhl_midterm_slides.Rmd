@@ -1,5 +1,5 @@
 ---
-title: "Slides for the Midterm"
+title: "Slides for the Mid-term Assignment"
 author: "Dae Hyun Lee"
 date: "10/21/2019"
 output: ioslides_presentation
@@ -7,29 +7,172 @@ output: ioslides_presentation
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(knitr)                ## loading the entire knitr package
+library(ggplot2)              ## ggplot2 is the only tidyverse library that I need
+library(esquisse)             ## use esquisse to setup the basic plots
+library(WDI)
+library(kableExtra)
+library(magrittr)
+library(gridExtra)
+library(AER)
+library(corrplot)
+library(cluster)
+library(rattle)
+library(factoextra)
+library(FactoMineR)
+load("/Users/daylelee/Desktop/MA 615 - R/MA615__Git_Repository/-Midterm Project/MA615_midterm/wdi_dat_pov.RData")
 ```
 
-## R Markdown
+## WDI (World Development Indicators) - World Bank
+Search, extract and format data from the World Bank's World Development Indicators.
 
-This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
-
-## Slide with Bullets
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
+```{r}
+## unique(wdi_dat_pov$country)  # show countries in the data
+names(wdi_dat_pov)  #show variables in the data
 ```
 
-## Slide with Plot
-
-```{r pressure}
-plot(pressure)
+```{r echo=FALSE, include=FALSE}
+# cleaning data for factor and cluster analysis 
+data <- wdi_dat_pov[,c(3:9)] # data only with numeric values
+data00 <- na.omit(wdi_dat_pov[,c(2:9)]) # data without any NA values
+data0 <- na.omit(data) # data without any NA values, but contains country names
 ```
 
+# Exploratory Factor Analysis
+
+## Correlation Plot
+
+```{r echo=FALSE}
+scaled_dat <- scale(data0)
+corr_dat <- cor(scaled_dat)
+colnames(corr_dat) <- c("Year", "GDP", "GDP per capita", "Population","Infant Mortality", "Life Expectancy", 
+                         "Maternal Mortality")
+
+rownames(corr_dat) <- c("Year", "GDP", "GDP per capita", "Population","Infant Mortality", "Life Expectancy", 
+                         "Maternal Mortality")
+
+corrplot(corr_dat, method = "color")
+```
+
+## Scree plot of eigenvalues after factor
+
+```{r echo = FALSE}
+screeplot <- function(data0, nc = 7, seed = 42){
+    sc <- nrow((data0)-1)*sum(apply(data0, 2, var))
+    for (i in 2:nc){
+      set.seed(seed)
+      sc[i] <- sum(kmeans(data0, centers = i)$withinss)}
+    plot(1:nc, sc, type = "b", xlab = "Number of Clusters", ylab = "Eigenvalue")}
+screeplot(scaled_dat, nc = 7)
+```
+
+# Cluster Analysis
+
+## Clustering Figure 1
+Grouping a set of data objects into clusters
+
+```{r, echo = FALSE}
+scdat <- kmeans(scaled_dat, 3)
+clusplot(scaled_dat, scdat$cluster, main = '2D plot of Clusters: 3 clusters', color = TRUE, shade = TRUE, labels = 2, lines = 0)
+```
+
+## Clustering Figure 2
+Determining the optimal number of clusters
+
+```{r, echo = FALSE}
+fviz_nbclust(scaled_dat, kmeans, method = "gap_stat")
+```
+
+## Clustering Figure 3
+Hierarchical clustering through euclidean distance
+
+```{r echo = FALSE}
+scdat2 <- dist(scaled_dat, method = "euclidean")
+fit_1 <- hclust(scdat2, method = "ward.D")
+plot(fit_1)
+groups <- cutree(fit_1, k = 3)
+rect.hclust(fit_1, k = 3, border = "red")
+```
+
+# EDA for Variables
+
+## Negatively correlated variables
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(data00) +
+ aes(x = GDP_perCap, y = infant_mortality) +
+ geom_point(aes(color = country), size = 1.8, colour = "#ef562d") +
+ geom_smooth(geom="line", alpha=0.4, size=0.9, span = 0.75) +
+ scale_x_continuous(trans = "log") +
+ scale_y_continuous(trans = "log") +
+ labs(x = "GDP per Capita", y = "Infant Mortality", title = "Negatively correlated variable pair") +
+ theme_classic()
+```
+
+## Positively correlated variables
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+ggplot(data00) +
+ aes(x = GDP_perCap, y = life_expectancy) +
+ geom_point(aes(color = country), size = 1.8, colour = "#ef562d") +
+ geom_smooth(geom="line", alpha=0.4, size=0.9, span = 0.75) +
+ scale_x_continuous(trans = "log") +
+ scale_y_continuous(trans = "log") +
+ labs(x = "GDP per Capita", y = "Life Expectancy", title = "Positively correlated variables") +
+ theme_classic()
+```
+
+# EDA on WDI related to poverty
+
+## Infant Mortality
+
+```{r ,echo=FALSE, message = FALSE, warning = FALSE}
+ggplot(subset(wdi_dat_pov, year == 2008), aes(x = GDP_perCap, y = infant_mortality)) + geom_point() +
+  labs(x="GDP per Capita", y="Infant Mortality Rate", 
+       title="Figure 0: Relationship between Infant Mortality Rate and GDP per Capita in year 2008") +
+  theme_classic()
+```
+
+## Life Expectancy
+
+```{r ,echo=FALSE}
+co <- c("United States", "Rwanda", "Mongolia", "Pakistan", "Lao PDR", "Bhutan", "Malaysia", "Brazil", "Ireland", "Japan", "China","Sweden", "Netherlands","Korea, Rep.")
+lifexp_c <- subset(wdi_dat_pov, country %in% co) # subset specific countries from the data
+lifexp_c0 <- subset(lifexp_c, year == 2016)
+
+ggplot(lifexp_c0) +
+ aes(x = GDP_perCap, y = life_expectancy, colour = country) +
+ geom_point(size = 2.56) +
+ geom_text(aes(label = country), size=2, nudge_y = 0.8) +
+ scale_color_hue() +
+ labs(x = "GDP per Capita (USD)", y = "Life Expectancy (year)", title = "Figure 1: Life Expectancy and GDP per Capita by Country", subtitle = "(2016)", color = "Country") +
+ scale_x_continuous(limits = c(0, 70000)) +
+ theme_classic()
+```
+
+## Infant Mortality
+
+```{r ,echo=FALSE}
+ggplot(lifexp_c0) +
+ aes(x = GDP_perCap, y = infant_mortality, colour = country) +
+ geom_point(size = 2.56) +
+ geom_text(aes(label = country), size=2, nudge_y = 1.9) +
+ scale_color_hue() +
+ labs(x = "GDP per Capita (USD)", y = "Infant Mortality Rate per 1,000 births", title = "Figure 2: Infant Mortality Rates by GDP per Capita", subtitle = "(2016)", color = "Country") +
+ scale_x_continuous(limits = c(0, 70000)) +
+ theme_classic()
+```
+
+## Simple Interactivity
+
+```{r ,echo=FALSE, message = FALSE, warning = FALSE}
+library(plotly)
+g <- ggplot(subset(lifexp_c, year > 1999 & year <= 2015), aes(x = GDP_perCap, y = infant_mortality, color = country == "Korea, Rep.", tooltip = country)) +
+  geom_point(size = 0.8) +
+  facet_wrap(~ year) + theme(legend.position="none") +
+  labs(x="GDP per Capita (USD)", y="Infant Mortality Rate per 1,000 births", title= "Figure 3: GDP per capita vs Infant Mortality Rates by years",
+       subtitle = "The colored dot represents Korea, Rep.", color = "Country") +
+  scale_color_manual(labels = c("T999", "T888"), values = c("darkblue", "red")) +
+  theme_dark()
+ggplotly(g)
+```
