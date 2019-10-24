@@ -30,19 +30,19 @@ ui <- fluidPage(
     
     mainPanel( 
         leafletOutput(outputId = "mymap")
-        ## absolutePanel(top = 60, left = 20, checkboxInput("markers", "Depth", FALSE), checkboxInput("heat", "Heatmap", FALSE) 
         )
 )
 ###################################################### server
 server <- function(input, output, session) {
+    # Create icons for awesomemarkers
     icons <- awesomeIcons(
         icon = 'education',
         iconColor = 'black',
-        library = 'glyphicon', # Options are 'glyphicon', 'fa', 'ion'.
-        markerColor = 'lightred',   # 겉에 여백 색깔
+        library = 'glyphicon', 
+        markerColor = 'lightred',   
         squareMarker = TRUE
     )
-    
+    # Draw map
     output$mymap <- renderLeaflet({
         leaflet(data = col_uni) %>% 
             setView(-71.1218,42.3535, zoom = 10) %>%
