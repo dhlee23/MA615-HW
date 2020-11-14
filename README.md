@@ -1,4 +1,3 @@
-# MA615-HW
-MSSP-MA615 assignment repository
+# MA615 - Data Science in R
 
-test editing
+Assignment repository for MA615
